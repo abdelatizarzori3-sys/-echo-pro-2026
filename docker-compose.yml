@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: echo
+      POSTGRES_PASSWORD: echo123
+      POSTGRES_DB: echo_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://echo:echo123@postgres:5432/echo_db
+      - KIMI_API_KEY=${KIMI_API_KEY}
+    depends_on:
+      - postgres
+
+volumes:
+  postgres_data:
