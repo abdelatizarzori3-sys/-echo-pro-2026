@@ -6,6 +6,8 @@
 .pub/
 /build/
 coverage/
+*.g.dart
+*.freezed.dart
 
 # Android
 /android/app/debug
@@ -34,6 +36,7 @@ backend/.env
 backend/.env.local
 backend/npm-debug.log
 backend/logs/
+backend/prisma/migrations/
 
 # Keys
 *.pem
@@ -41,3 +44,4 @@ backend/logs/
 .env
 .env.local
 .env.production
+.vercel

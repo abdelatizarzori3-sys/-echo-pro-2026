@@ -1,27 +1,85 @@
-version: '3.8'
+# Echo Pro — Full Stack Local Development
+# Usage: docker-compose up --build
+
+version: "3.9"
 
 services:
+  # ─── PostgreSQL Database ─────────────────────────────────────
   postgres:
     image: postgres:16-alpine
+    container_name: echo-postgres
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: echo
-      POSTGRES_PASSWORD: echo123
+      POSTGRES_USER: echo_user
+      POSTGRES_PASSWORD: echo_password
       POSTGRES_DB: echo_db
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U echo_user -d echo_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
+  # ─── Redis (for rate limiting & sessions) ────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: echo-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # ─── Backend API ───────────────────────────────────────────────
   backend:
-    build: ./backend
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: production
+    container_name: echo-backend
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
-      - DATABASE_URL=postgresql://echo:echo123@postgres:5432/echo_db
-      - KIMI_API_KEY=${KIMI_API_KEY}
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://echo_user:echo_password@postgres:5432/echo_db
+      KIMI_API_KEY: ${KIMI_API_KEY}
+      KIMI_BASE_URL: https://api.moonshot.cn/v1
+      KIMI_MODEL: moonshot-v1-8k
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-min-32-chars-long}
+      CORS_ORIGIN: "*"
+      LOG_LEVEL: info
+      REDIS_URL: redis://redis:6379
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./backend/prisma:/app/prisma
+    command: >
+      sh -c "npx prisma migrate deploy &&
+             npx prisma db seed &&
+             node src/server.js"
+
+  # ─── Nginx Reverse Proxy ──────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: echo-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
+  redis_data:

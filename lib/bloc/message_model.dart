@@ -1,3 +1,5 @@
+import '../models/message_model.dart';
+
 enum MessageSender { user, agent }
 
 class ChatMessage {

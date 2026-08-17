@@ -1,3 +1,5 @@
+import '../models/chat_message.dart';
+
 abstract class ChatEvent {}
 
 class SendMessageEvent extends ChatEvent {

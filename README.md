@@ -1,8 +1,8 @@
-# 🤖 Echo - Your Smart Assistant
+# 🤖 Echo Pro v3.0 — Your Smart Assistant
 
-## 🔑 Kimi API Key - Where to put it?
+## 🔑 Kimi API Key — Where to put it?
 
-### ❌ NEVER put the key here:
+### ❌ NEVER:
 - Flutter code (exposed in APK/IPA)
 - GitHub (stolen immediately)
 - Any file inside `lib/`
@@ -18,12 +18,18 @@ https://platform.moonshot.cn → API Keys → Create
 ## 🚀 Quick Start
 
 ### 1. Railway (Backend + Database)
-```
-railway.app → New Project
-New → Database → PostgreSQL
-New → GitHub Repo → Select Echo
-Variables → KIMI_API_KEY = sk-your-key
-Deploy!
+```bash
+# Railway CLI
+railway login
+railway init
+railway add --database postgres
+
+# Set variables
+railway variables set KIMI_API_KEY=sk-your-key
+railway variables set JWT_SECRET=your-secret-32-chars-long
+
+# Deploy
+railway up
 ```
 
 ### 2. Flutter
@@ -32,18 +38,60 @@ flutter pub get
 flutter run
 ```
 
-## 🏗️ Project Structure
+## 🏗️ Architecture
 
 ```
-Echo/
-├── lib/              # Flutter app
-├── backend/          # Node.js API
-├── .github/          # CI/CD workflows
-├── pubspec.yaml
-└── README.md
+Clean Architecture + BLoC + Prisma + JWT
+├── lib/
+│   ├── core/          # Theme, Network, DI, Utils
+│   ├── features/
+│   │   ├── auth/      # Login, Register, JWT
+│   │   └── chat/      # Messages, Sessions, AI
+│   └── main.dart
+├── backend/
+│   ├── src/
+│   │   ├── config/    # Swagger, Prisma
+│   │   ├── controllers/
+│   │   ├── middleware/# Auth, Rate Limit, Error
+│   │   ├── routes/
+│   │   ├── services/  # AI Service (Kimi)
+│   │   ├── websocket/ # Real-time chat
+│   │   └── jobs/      # Cron cleanup
+│   └── prisma/
+│       └── schema.prisma
+└── .github/workflows/
+    ├── flutter.yml
+    └── backend.yml
 ```
 
-## ⚠️ Security Warning
+## 🛡️ Security Features
 
-**Frontend → Backend → Kimi**
-**NO key in Flutter ever!**
+| Feature | Implementation |
+|---------|---------------|
+| Auth | JWT + bcrypt |
+| Rate Limit | 20 msg/min per user |
+| Input Validation | express-validator + Joi |
+| Headers | Helmet |
+| CORS | Configurable |
+| API Keys | Railway Variables only |
+| Logging | Winston + Daily Rotate |
+| Monitoring | Sentry |
+
+## 📊 Monitoring
+
+- **Sentry**: Error tracking
+- **Railway Logs**: Real-time
+- **Health Check**: `/api/health`
+- **Swagger Docs**: `/api/docs`
+
+## 🧪 Testing
+
+```bash
+# Backend
+cd backend
+npm test
+
+# Flutter
+cd ..
+flutter test
+```

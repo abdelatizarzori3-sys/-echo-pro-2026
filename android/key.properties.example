@@ -1,0 +1,9 @@
+# Echo Pro — Android Signing Configuration
+# NEVER commit this file!
+# Generate keystore:
+# keytool -genkey -v -keystore key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias echo
+
+storePassword=your-store-password
+keyPassword=your-key-password
+keyAlias=echo
+storeFile=key.jks

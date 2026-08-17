@@ -1,3 +1,4 @@
+import '../models/message_model.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../models/message_model.dart';

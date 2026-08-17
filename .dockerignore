@@ -1,0 +1,38 @@
+# Git
+.git
+.gitignore
+
+# Node
+backend/node_modules
+backend/npm-debug.log
+backend/.env
+backend/.env.local
+backend/coverage
+backend/logs
+
+# Flutter
+build/
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+android/
+ios/
+web/
+linux/
+macos/
+windows/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests (keep for CI)
+!backend/tests/
