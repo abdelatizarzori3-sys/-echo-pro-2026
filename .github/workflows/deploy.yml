@@ -1,149 +1,21 @@
-name: 🚀 Deploy Echo Pro
-
+name: Deploy Flutter Web
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
+    branches: [ main ]
 jobs:
-  # ─── Backend Tests ───────────────────────────────────────────
-  backend-test:
-    name: 🧪 Backend Tests
-    runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16-alpine
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: echo_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-
-      - name: Install dependencies
-        run: |
-          cd backend
-          npm ci
-
-      - name: Generate Prisma Client
-        run: |
-          cd backend
-          npx prisma generate
-
-      - name: Run migrations
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/echo_test
-        run: |
-          cd backend
-          npx prisma migrate deploy
-
-      - name: Run tests
-        env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/echo_test
-          JWT_SECRET: test-secret-key-for-ci-only
-          KIMI_API_KEY: sk-test-key
-        run: |
-          cd backend
-          npm test
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
-        with:
-          directory: ./backend/coverage
-          flags: backend
-
-  # ─── Flutter Tests ───────────────────────────────────────────
-  flutter-test:
-    name: 📱 Flutter Tests
+  build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
+      - uses: actions/checkout@v3
+      - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-          cache: true
-
-      - name: Get dependencies
-        run: flutter pub get
-
-      - name: Analyze code
-        run: flutter analyze
-
-      - name: Run tests
-        run: flutter test --coverage
-
-      - name: Upload coverage
-        uses: codecov/codecov-action@v4
+          channel: "stable"
+      - run: flutter build web --release
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v20
         with:
-          directory: ./coverage
-          flags: flutter
-
-  # ─── Deploy to Railway ─────────────────────────────────────
-  deploy-railway:
-    name: 🚂 Deploy to Railway
-    needs: [backend-test]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Deploy to Railway
-        uses: railway/cli@v3
-        with:
-          railway_token: ${{ secrets.RAILWAY_TOKEN }}
-          service: echo-backend
-
-  # ─── Build Flutter Release ─────────────────────────────────
-  build-flutter:
-    name: 📦 Build Flutter Release
-    needs: [flutter-test]
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          flutter-version: '3.24.0'
-          channel: 'stable'
-
-      - name: Get dependencies
-        run: flutter pub get
-
-      - name: Build APK
-        run: flutter build apk --release
-
-      - name: Build App Bundle
-        run: flutter build appbundle --release
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: echo-pro-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-
-      - name: Upload AAB
-        uses: actions/upload-artifact@v4
-        with:
-          name: echo-pro-aab
-          path: build/app/outputs/bundle/release/app-release.aab
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.ORG_ID }}
+          vercel-project-id: ${{ secrets.PROJECT_ID }}
+          vercel-args: "--prod"
+          working-directory: ./build/web

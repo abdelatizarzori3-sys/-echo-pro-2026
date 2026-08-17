@@ -45,3 +45,4 @@ backend/prisma/migrations/
 .env.local
 .env.production
 .vercel
+.env*
