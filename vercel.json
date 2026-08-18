@@ -1,8 +1,7 @@
 {
   "version": 2,
   "cleanUrls": true,
-  "name": "echo-pro-2026",
   "rewrites": [
-    { "source": "/(.*)", "destination": "/$1" }
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
