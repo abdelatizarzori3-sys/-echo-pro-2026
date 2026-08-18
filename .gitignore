@@ -46,3 +46,5 @@ backend/prisma/migrations/
 .env.production
 .vercel
 .env*
+flutter/
+*.tar.xz
