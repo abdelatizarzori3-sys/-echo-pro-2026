@@ -1,53 +1,45 @@
 /**
  * Environment Configuration
- * 🔑 All API keys MUST come from Railway Variables — never hardcoded
+ * Loads and validates all env variables
  */
 
-require('dotenv').config();
+const requiredEnvs = [
+  'NODE_ENV',
+  'PORT',
+  'DATABASE_URL',
+  'JWT_SECRET',
+];
 
-const required = ['DATABASE_URL'];
-
-const env = {
-  NODE_ENV: process.env.NODE_ENV || 'development',
-  PORT: parseInt(process.env.PORT, 10) || 3000,
-
-  // 🔑 Database — Railway provides this automatically
-  DATABASE_URL: process.env.DATABASE_URL,
-
-  // 🔑 Redis — optional but recommended for caching
-  REDIS_URL: process.env.REDIS_URL || null,
-
-  // 🔑 Kimi AI API Key — REQUIRED, set in Railway Variables
-  KIMI_API_KEY: process.env.KIMI_API_KEY,
-  KIMI_BASE_URL: process.env.KIMI_BASE_URL || 'https://api.moonshot.cn/v1',
-  KIMI_MODEL: process.env.KIMI_MODEL || 'moonshot-v1-8k',
-
-  // 🔑 JWT — for future authentication
-  JWT_SECRET: process.env.JWT_SECRET || 'echo-dev-secret-change-in-production',
-  JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN || '7d',
-
-  // CORS
-  CORS_ORIGIN: process.env.CORS_ORIGIN || '*',
-
-  // Rate Limiting
-  RATE_LIMIT_WINDOW_MS: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 60000,
-  RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
-
-  // Logging
-  LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+const optionalEnvs = {
+  KIMI_API_KEY: '',
+  KIMI_BASE_URL: 'https://api.moonshot.cn/v1',
+  KIMI_MODEL: 'moonshot-v1-8k',
+  CORS_ORIGIN: '*',
+  LOG_LEVEL: 'info',
+  REDIS_URL: '',
+  SENTRY_DSN: '',
 };
 
-// Validate required env vars
-for (const key of required) {
-  if (!env[key]) {
-    console.error(`❌ Missing required environment variable: ${key}`);
+// Check required
+requiredEnvs.forEach((key) => {
+  if (!process.env[key]) {
+    console.error(`❌ Missing required env: ${key}`);
     process.exit(1);
   }
-}
+});
 
-// Warn about missing KIMI key
-if (!env.KIMI_API_KEY) {
-  console.warn('⚠️  KIMI_API_KEY not set — AI chat will fail. Add it in Railway Variables!');
-}
-
-module.exports = env;
+module.exports = {
+  NODE_ENV: process.env.NODE_ENV || 'development',
+  PORT: process.env.PORT || 3000,
+  DATABASE_URL: process.env.DATABASE_URL,
+  JWT_SECRET: process.env.JWT_SECRET,
+  KIMI_API_KEY: process.env.KIMI_API_KEY || '',
+  KIMI_BASE_URL: process.env.KIMI_BASE_URL || optionalEnvs.KIMI_BASE_URL,
+  KIMI_MODEL: process.env.KIMI_MODEL || optionalEnvs.KIMI_MODEL,
+  CORS_ORIGIN: process.env.CORS_ORIGIN || optionalEnvs.CORS_ORIGIN,
+  LOG_LEVEL: process.env.LOG_LEVEL || optionalEnvs.LOG_LEVEL,
+  REDIS_URL: process.env.REDIS_URL || optionalEnvs.REDIS_URL,
+  SENTRY_DSN: process.env.SENTRY_DSN || optionalEnvs.SENTRY_DSN,
+  isDev: process.env.NODE_ENV === 'development',
+  isProd: process.env.NODE_ENV === 'production',
+};

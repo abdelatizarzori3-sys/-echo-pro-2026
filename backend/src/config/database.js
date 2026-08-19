@@ -1,28 +1,25 @@
 /**
- * Prisma Client Singleton
- * Prevents multiple instances in development
+ * PostgreSQL Database Configuration
+ * Using PgBouncer connection pooling
  */
-const { PrismaClient } = require('@prisma/client');
 
-const globalForPrisma = globalThis;
+const { Pool } = require('pg');
+const env = require('./env');
+const logger = require('./logger');
 
-const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  log: process.env.NODE_ENV === 'development'
-    ? ['query', 'info', 'warn', 'error']
-    : ['error'],
+const pool = new Pool({
+  connectionString: env.DATABASE_URL,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
 });
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma;
-}
-
-// Soft delete middleware
-prisma.$use(async (params, next) => {
-  if (params.model === 'Message' && params.action === 'delete') {
-    params.action = 'update';
-    params.args.data = { deletedAt: new Date() };
-  }
-  return next(params);
+pool.on('error', (err) => {
+  logger.error('Unexpected error on idle client', err);
 });
 
-module.exports = prisma;
+pool.on('connect', () => {
+  logger.info('✅ New database connection established');
+});
+
+module.exports = { pool };

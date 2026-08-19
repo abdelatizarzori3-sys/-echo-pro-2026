@@ -1,44 +1,32 @@
 /**
- * Global Error Handler
- * Catches all errors and returns safe responses
+ * Global Error Handler Middleware
  */
 
 const logger = require('../config/logger');
 
-class AppError extends Error {
-  constructor(message, statusCode = 500) {
-    super(message);
-    this.statusCode = statusCode;
-    this.isOperational = true;
-    Error.captureStackTrace(this, this.constructor);
-  }
-}
-
 const errorHandler = (err, req, res, next) => {
-  err.statusCode = err.statusCode || 500;
-  err.message = err.message || 'Internal Server Error';
-
-  logger.error({
+  logger.error('Unhandled Error:', {
     message: err.message,
-    statusCode: err.statusCode,
     stack: err.stack,
     path: req.path,
     method: req.method,
-    ip: req.ip
   });
 
-  // Don't leak error details in production
-  const response = {
-    success: false,
-    error: err.message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
-  };
+  // Prisma validation error
+  if (err.code === 'P2002') {
+    return res.status(409).json({ error: 'Unique constraint failed' });
+  }
 
-  res.status(err.statusCode).json(response);
+  // JWT error
+  if (err.name === 'JsonWebTokenError') {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+
+  // Default error
+  res.status(err.status || 500).json({
+    error: err.message || 'Internal Server Error',
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  });
 };
 
-const asyncHandler = (fn) => (req, res, next) => {
-  Promise.resolve(fn(req, res, next)).catch(next);
-};
-
-module.exports = { errorHandler, asyncHandler, AppError };
+module.exports = errorHandler;

@@ -1,53 +1,28 @@
 /**
- * WebSocket Handler — Real-time Chat
+ * WebSocket Socket.io Handler
  */
 
-const chatService = require('../services/chatService');
-const aiService = require('../services/aiService');
 const logger = require('../config/logger');
 
 const socketHandler = (io) => {
   io.on('connection', (socket) => {
-    logger.info(`Client connected: ${socket.id}`);
+    logger.info(`✅ User connected: ${socket.id}`);
 
-    socket.on('join_session', (sessionId) => {
-      socket.join(sessionId);
-      socket.sessionId = sessionId;
-      logger.info(`Client ${socket.id} joined session: ${sessionId}`);
+    socket.on('join-room', (roomId) => {
+      socket.join(roomId);
+      logger.info(`✅ User ${socket.id} joined room ${roomId}`);
     });
 
-    socket.on('send_message', async (data) => {
-      try {
-        const { text, sessionId = 'default' } = data;
-
-        // Save and broadcast user message
-        const userMsg = await chatService.saveMessage(text, 'user', sessionId);
-        io.to(sessionId).emit('message', userMsg);
-        io.to(sessionId).emit('typing', true);
-
-        // Get AI response
-        const history = await chatService.getRecentHistory(sessionId, 10);
-        const reply = await aiService.sendMessage(text, history);
-
-        // Save and broadcast AI response
-        const aiMsg = await chatService.saveMessage(reply, 'agent', sessionId);
-        io.to(sessionId).emit('typing', false);
-        io.to(sessionId).emit('message', aiMsg);
-
-      } catch (error) {
-        logger.error('WebSocket error:', error);
-        socket.emit('error', { message: 'Failed to process message' });
-        io.to(socket.sessionId || 'default').emit('typing', false);
-      }
-    });
-
-    socket.on('clear_chat', async (sessionId = 'default') => {
-      await chatService.clearSession(sessionId);
-      io.to(sessionId).emit('chat_cleared');
+    socket.on('send-message', (data) => {
+      io.to(data.roomId).emit('receive-message', {
+        from: socket.id,
+        message: data.message,
+        timestamp: new Date(),
+      });
     });
 
     socket.on('disconnect', () => {
-      logger.info(`Client disconnected: ${socket.id}`);
+      logger.info(`❌ User disconnected: ${socket.id}`);
     });
   });
 };
