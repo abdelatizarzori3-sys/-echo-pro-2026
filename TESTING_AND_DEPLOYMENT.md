@@ -75,7 +75,7 @@ ls -la
 ### 1.3 فحص Flutter
 
 ```bash
-cd ../..
+cd ../.
 cd lib  # أو مجلد Flutter الرئيسي
 
 # تحقق من الإصدارات
@@ -194,7 +194,7 @@ curl http://localhost:3000/api/health
 ```bash
 cd ~/echo-pro-2026
 
-# اختبر بناء صورة Backend
+# اختبت بناء صورة Backend
 docker build -f backend/Dockerfile -t echo-backend:latest ./backend
 
 # تحقق من البناء
@@ -554,4 +554,3 @@ LOG_LEVEL = 'error'  // قلل السجلات
 **تم التحديث:** 2026-08-19  
 **الحالة:** ✅ جاهز للاختبار والنشر  
 **أنت الآن جاهز لنشر Echo Pro!** 🚀
-
