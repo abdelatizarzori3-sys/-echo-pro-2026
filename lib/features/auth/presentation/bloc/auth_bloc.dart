@@ -1,49 +1,47 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:equatable/equatable.dart';
-import '../../domain/entities/user.dart';
-import '../../domain/repositories/auth_repository.dart';
 
 part 'auth_event.dart';
 part 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final AuthRepository _repository;
-
-  AuthBloc(this._repository) : super(AuthInitial()) {
-    on<AuthLoginRequested>(_onLogin);
-    on<AuthRegisterRequested>(_onRegister);
-    on<AuthLogoutRequested>(_onLogout);
-    on<AuthCheckRequested>(_onCheck);
+  AuthBloc() : super(AuthInitial()) {
+    on<LoginRequested>(_onLoginRequested);
+    on<RegisterRequested>(_onRegisterRequested);
+    on<LogoutRequested>(_onLogoutRequested);
   }
 
-  Future<void> _onLogin(AuthLoginRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onLoginRequested(
+    LoginRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(AuthLoading());
-    final result = await _repository.login(event.email, event.password);
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (user) => emit(AuthAuthenticated(user)),
-    );
+    try {
+      // TODO: Call API to login
+      await Future.delayed(const Duration(seconds: 2));
+      emit(AuthAuthenticated(userId: 'user123'));
+    } catch (e) {
+      emit(AuthError(message: e.toString()));
+    }
   }
 
-  Future<void> _onRegister(AuthRegisterRequested event, Emitter<AuthState> emit) async {
+  Future<void> _onRegisterRequested(
+    RegisterRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(AuthLoading());
-    final result = await _repository.register(event.email, event.password, event.name);
-    result.fold(
-      (failure) => emit(AuthError(failure.message)),
-      (user) => emit(AuthAuthenticated(user)),
-    );
+    try {
+      // TODO: Call API to register
+      await Future.delayed(const Duration(seconds: 2));
+      emit(AuthAuthenticated(userId: 'user123'));
+    } catch (e) {
+      emit(AuthError(message: e.toString()));
+    }
   }
 
-  Future<void> _onLogout(AuthLogoutRequested event, Emitter<AuthState> emit) async {
-    await _repository.logout();
-    emit(AuthUnauthenticated());
-  }
-
-  Future<void> _onCheck(AuthCheckRequested event, Emitter<AuthState> emit) async {
-    final result = await _repository.checkAuth();
-    result.fold(
-      (_) => emit(AuthUnauthenticated()),
-      (user) => user != null ? emit(AuthAuthenticated(user)) : emit(AuthUnauthenticated()),
-    );
+  Future<void> _onLogoutRequested(
+    LogoutRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthInitial());
   }
 }

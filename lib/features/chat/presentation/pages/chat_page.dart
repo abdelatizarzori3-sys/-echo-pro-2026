@@ -1,80 +1,121 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/di/injection.dart';
-import '../../../auth/presentation/bloc/auth_bloc.dart';
-import '../bloc/chat_bloc.dart';
-import '../widgets/chat_app_bar.dart';
-import '../widgets/chat_input.dart';
-import '../widgets/chat_drawer.dart';
-import '../widgets/empty_chat.dart';
-import '../widgets/message_bubble.dart';
-import '../widgets/typing_indicator.dart';
 
-class ChatPage extends StatelessWidget {
-  const ChatPage({super.key});
+class ChatPage extends StatefulWidget {
+  const ChatPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) => getIt<ChatBloc>()..add(const ChatLoadMessages()),
-      child: const _ChatView(),
-    );
-  }
+  State<ChatPage> createState() => _ChatPageState();
 }
 
-class _ChatView extends StatefulWidget {
-  const _ChatView();
-
-  @override
-  State<_ChatView> createState() => _ChatViewState();
-}
-
-class _ChatViewState extends State<_ChatView> {
-  final _scrollController = ScrollController();
-
-  void _scrollToBottom() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
-    }
-  }
+class _ChatPageState extends State<ChatPage> {
+  final messageController = TextEditingController();
+  final scrollController = ScrollController();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const ChatAppBar(),
-      drawer: const ChatDrawer(),
+      appBar: AppBar(
+        title: const Text('🤖 Echo Pro'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () {
+              // TODO: Logout
+            },
+          ),
+        ],
+      ),
       body: Column(
         children: [
           Expanded(
-            child: BlocConsumer<ChatBloc, ChatState>(
-              listener: (_, state) {
-                if (state is ChatLoaded) Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
-              },
-              builder: (_, state) {
-                if (state is ChatLoading) return const Center(child: CircularProgressIndicator());
-                if (state is ChatError) return Center(child: Text('❌ ${state.message}'));
-                if (state is ChatLoaded) {
-                  if (state.messages.isEmpty && !state.isTyping) return const EmptyChat();
-                  return ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    itemCount: state.messages.length + (state.isTyping ? 1 : 0),
-                    itemBuilder: (_, index) {
-                      if (state.isTyping && index == state.messages.length) return const TypingIndicator();
-                      return MessageBubble(message: state.messages[index]);
-                    },
-                  );
-                }
-                return const EmptyChat();
+            child: ListView.builder(
+              controller: scrollController,
+              padding: const EdgeInsets.all(12),
+              itemCount: 5,
+              itemBuilder: (context, index) {
+                return ChatBubble(
+                  message: 'Message $index',
+                  isUser: index.isEven,
+                );
               },
             ),
           ),
-          const ChatInput(),
+          Container(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: messageController,
+                    decoration: InputDecoration(
+                      hintText: 'Type a message...',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FloatingActionButton(
+                  onPressed: () {
+                    if (messageController.text.isNotEmpty) {
+                      // TODO: Send message
+                      messageController.clear();
+                    }
+                  },
+                  child: const Icon(Icons.send),
+                ),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    messageController.dispose();
+    scrollController.dispose();
+    super.dispose();
+  }
+}
+
+class ChatBubble extends StatelessWidget {
+  final String message;
+  final bool isUser;
+
+  const ChatBubble({
+    Key? key,
+    required this.message,
+    required this.isUser,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isUser
+              ? Theme.of(context).colorScheme.primary
+              : Theme.of(context).colorScheme.surfaceVariant,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          message,
+          style: TextStyle(
+            color: isUser ? Colors.white : Colors.black,
+          ),
+        ),
       ),
     );
   }
