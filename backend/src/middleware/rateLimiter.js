@@ -1,29 +1,43 @@
 /**
  * Rate Limiting Middleware
- * Prevents abuse and protects AI API costs
  */
 
 const rateLimit = require('express-rate-limit');
+const RedisStore = require('rate-limit-redis');
+const redis = require('redis');
 const env = require('../config/env');
 
-const apiLimiter = rateLimit({
-  windowMs: env.RATE_LIMIT_WINDOW_MS,
-  max: env.RATE_LIMIT_MAX,
-  message: {
-    error: 'Too many requests',
-    retryAfter: 'Please try again later'
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
+let redisClient;
 
-const chatLimiter = rateLimit({
-  windowMs: 60000, // 1 minute
-  max: 30, // 30 messages per minute per IP
-  message: {
-    error: 'Chat rate limit exceeded',
-    retryAfter: 'Please slow down'
+if (env.REDIS_URL) {
+  redisClient = redis.createClient({ url: env.REDIS_URL });
+  redisClient.connect().catch(err => console.error('Redis error:', err));
+}
+
+const createLimiter = (windowMs, max, message = 'Too many requests') => {
+  const options = {
+    windowMs,
+    max,
+    message,
+    standardHeaders: true,
+    legacyHeaders: false,
+  };
+
+  if (redisClient) {
+    return new rateLimit({
+      ...options,
+      store: new RedisStore({
+        client: redisClient,
+        prefix: 'rl:',
+      }),
+    });
   }
-});
 
-module.exports = { apiLimiter, chatLimiter };
+  return new rateLimit(options);
+};
+
+const apiLimiter = createLimiter(15 * 60 * 1000, 100);
+const chatLimiter = createLimiter(60 * 1000, 20, 'Too many messages');
+const authLimiter = createLimiter(15 * 60 * 1000, 5, 'Too many auth attempts');
+
+module.exports = { apiLimiter, chatLimiter, authLimiter };
